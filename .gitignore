@@ -4,6 +4,11 @@ data/tiled_storage/writable
 .env
 .DS_Store
 rabbitmq/
+tiled_storage*
+tiled_db*
+data
+
+
 
 .vscode/
 venv

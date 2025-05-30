@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   prefect:
     image: prefecthq/prefect:2.14-python3.11
@@ -18,6 +17,7 @@ services:
 
   prefect_db:
     image: postgres:14.5-alpine
+    # user: "0"
     environment:
       - POSTGRES_USER=${PREFECT_DB_USER}
       - POSTGRES_PASSWORD=${PREFECT_DB_PW}
@@ -32,8 +32,10 @@ services:
   tiled:
     # see the file ./tiled/deploy/config.yml for detailed configuration of tiled
     image: ghcr.io/bluesky/tiled:v0.1.0a114
+    # command: tiled catalog register -v "postgresql+asyncpg://${TILED_DB_USER}:${TILED_DB_PW}@${TILED_DB_SERVER}:5432/${TILED_DB_NAME}" /tiled_storage/
     ports:
       - "8000:8000"
+
     environment:
       - TILED_DB_USER=${TILED_DB_USER}
       - TILED_DB_PW=${TILED_DB_PW}
@@ -42,7 +44,11 @@ services:
       - TILED_SINGLE_USER_API_KEY=${TILED_SINGLE_USER_API_KEY}
     volumes:
       - ./tiled/deploy:/deploy
-      - /dls/staging/dls/k11/data/2024/mg37376-1/processing/20240311120527_37086:/tiled_storage
+      # - /scratch/wdr83388/Workspaces/mount/Savu_k11-57186_full_fd_rr_vo_AST_tiff:/tiled_storage:r
+      # - /dls/staging/dls/k11/data/2024/mg37376-1/processing/20240311120527_37086:/tiled_storage:r
+      # - /dls/k11/data/2025/mg40163-1/processed:/tiled_storage:r #DB B
+      - /dls/k11/data/2025/mg34010-1/processed/Savu_k11-52757_full_fd_rr_vo_pag_AST_tiff:/tiled_storage:r #DB C
+      
     depends_on:
       - tiled_db
     networks:
@@ -51,35 +57,51 @@ services:
 
   tiled_db:
     image: postgres:14.5-alpine
+    # user: "0"
     environment:
       - POSTGRES_USER=${TILED_DB_USER}
       - POSTGRES_PASSWORD=${TILED_DB_PW}
       - POSTGRES_DB=${TILED_DB_NAME}
     volumes:
-      - ./data/tiled_db:/var/lib/postgresql/data:rw
-      # - ./data/tiled_storage:/tiled_storage
+      # - ./data/tiled_db:/var/lib/postgresql/data:rw
+      # - ./data/tiled_db1:/var/lib/postgresql/data:rw
+      # - ./data/tiled_db2:/var/lib/postgresql/data:rw
+      # - ./data/tiled_dbA:/var/lib/postgresql/data:rw
+      # - ./data/tiled_dbA:/var/lib/postgresql/data:rw
+      # - ./data/tiled_storageB:/var/lib/postgresql/data:rw
+      # - ./data/tiled_storageC:/var/lib/postgresql/data:rw
+      # - ./data/tiled_storageD:/var/lib/postgresql/data:rw
+      - ./data/tiled_storageF:/var/lib/postgresql/data:rw
     restart: unless-stopped
     networks:
       mle_net:
 
 
-  # tiled_ingest:
-  #   build:
-  #     context: ./mlex_tiled_ingest
-  #   environment:
-  #     - TILED_DB_USER=${TILED_DB_USER}
-  #     - TILED_DB_PW=${TILED_DB_PW}
-  #     - TILED_DB_NAME=${TILED_DB_NAME}
-  #     - TILED_DB_SERVER=${TILED_DB_SERVER}
-  #     - TILED_INGEST_TILED_CONFIG_PATH=${TILED_INGEST_TILED_CONFIG_PATH}
-  #     - TILED_INGEST_RMQ_HOST=${TILED_INGEST_RMQ_HOST}
-  #     - TILED_INGEST_RMQ_USER=${TILED_INGEST_RMQ_USER}
-  #     - TILED_INGEST_RMQ_PW=${TILED_INGEST_RMQ_PW}
-
-  #   volumes:
-  #     - ./mlex_tiled_ingest:/app
-  #     - ./tiled/deploy:/deploy
-  #     - ./data/tiled_storage:/tiled_storage
+  tiled_ingest:
+    image: 3a214f3dbbbf
+    # build:
+    #   context: ./mlex_tiled_ingest
+    environment:
+      # - TILED_INGEST_TILED_CONFIG_PATH=/dls/tmp/mlex/mlex_tomo_framework/tiled_conda/deploy/config
+      - STOMP_SERVER=k11-control
+      - STOMP_TOPIC_NAME=/topic/org.dawnsci.file.topic
+      - TILED_DB_USER=${TILED_DB_USER}
+      - TILED_DB_PW=${TILED_DB_PW}
+      - TILED_DB_NAME=${TILED_DB_NAME}
+      - TILED_DB_SERVER=${TILED_DB_SERVER}
+      # - TILED_INGEST_TILED_CONFIG_PATH=${TILED_INGEST_TILED_CONFIG_PATH}
+      - TILED_INGEST_TILED_CONFIG_PATH=/deploy/config
+      - TILED_INGEST_RMQ_HOST=${TILED_INGEST_RMQ_HOST}
+      - TILED_INGEST_RMQ_USER=${TILED_INGEST_RMQ_USER}
+      - TILED_INGEST_RMQ_PW=${TILED_INGEST_RMQ_PW}
+    volumes:
+      - /dls/k11/data/2025:/dls/k11/data/2025:ro
+      - ./mlex_tiled_ingest:/app
+      - ./tiled/deploy:/deploy
+      - ./data/tiled_storage:/tiled_storage
+    networks:
+      mle_net:
+    
 
   mlex_segmentation:
     image: ghcr.io/mlexchange/mlex_highres_segmentation:main
@@ -100,7 +122,7 @@ services:
       - FLOW_TYPE=${FLOW_TYPE}
       - IMAGE_NAME=${IMAGE_NAME}
       - IMAGE_TAG=${IMAGE_TAG}
-      - MOUNT_RESULTS_DIR=${RESULTS_DIR}
+      - MOUNT_RESULTS_DIR="${PWD}/data/results"
       - CONTAINER_NETWORK=${CONTAINER_NETWORK}
       - TRAIN_SCRIPT_PATH=${TRAIN_SCRIPT_PATH}
       - SEGMENT_SCRIPT_PATH=${SEGMENT_SCRIPT_PATH}
