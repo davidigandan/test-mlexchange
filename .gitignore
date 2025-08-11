@@ -18,3 +18,5 @@ mlex_tiled_ingest/
 mlex_highres_segmentation/
 
 docker-compose.override.yaml
+.devcontainer
+dist

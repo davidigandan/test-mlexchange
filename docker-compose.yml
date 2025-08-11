@@ -32,7 +32,7 @@ services:
   tiled:
     # see the file ./tiled/deploy/config.yml for detailed configuration of tiled
     image: ghcr.io/bluesky/tiled:v0.1.0a114
-    # command: tiled catalog register -v "postgresql+asyncpg://${TILED_DB_USER}:${TILED_DB_PW}@${TILED_DB_SERVER}:5432/${TILED_DB_NAME}" /tiled_storage/
+    # command: tiled catalog register -v "postgresql+asyncpg://${TILED_DB_USER}:${TILED_DB_PW}@${TILED_DB_SERVER}:5432/${TILED_DB_NAME}" /Savu_k11-64462_full_fd_rr_vo_pag_AST_tiff/
     ports:
       - "8000:8000"
 
@@ -47,7 +47,8 @@ services:
       # - /scratch/wdr83388/Workspaces/mount/Savu_k11-57186_full_fd_rr_vo_AST_tiff:/tiled_storage:r
       # - /dls/staging/dls/k11/data/2024/mg37376-1/processing/20240311120527_37086:/tiled_storage:r
       # - /dls/k11/data/2025/mg40163-1/processed:/tiled_storage:r #DB B
-      - /dls/k11/data/2025/mg34010-1/processed/Savu_k11-52757_full_fd_rr_vo_pag_AST_tiff:/tiled_storage:r #DB C
+      # - /dls/k11/data/2025/mg34010-1/processed/Savu_k11-52757_full_fd_rr_vo_pag_AST_tiff:/tiled_storage:r #DB C
+      - /dls/k11/data/2025/mg39885-1/processed/:/dls/k11/data/2025/mg39885-1/processed/:r #DB C
       
     depends_on:
       - tiled_db
@@ -63,28 +64,23 @@ services:
       - POSTGRES_PASSWORD=${TILED_DB_PW}
       - POSTGRES_DB=${TILED_DB_NAME}
     volumes:
-      # - ./data/tiled_db:/var/lib/postgresql/data:rw
-      # - ./data/tiled_db1:/var/lib/postgresql/data:rw
-      # - ./data/tiled_db2:/var/lib/postgresql/data:rw
-      # - ./data/tiled_dbA:/var/lib/postgresql/data:rw
-      # - ./data/tiled_dbA:/var/lib/postgresql/data:rw
-      # - ./data/tiled_storageB:/var/lib/postgresql/data:rw
-      # - ./data/tiled_storageC:/var/lib/postgresql/data:rw
-      # - ./data/tiled_storageD:/var/lib/postgresql/data:rw
-      - ./data/tiled_storageF:/var/lib/postgresql/data:rw
+      - ./data/tiled_storage3h:/var/lib/postgresql/data:rw
     restart: unless-stopped
     networks:
       mle_net:
 
 
   tiled_ingest:
-    image: 3a214f3dbbbf
-    # build:
-    #   context: ./mlex_tiled_ingest
+    # image: f59452148af7
+    build:
+      context: ./mlex_tiled_ingest
     environment:
       # - TILED_INGEST_TILED_CONFIG_PATH=/dls/tmp/mlex/mlex_tomo_framework/tiled_conda/deploy/config
       - STOMP_SERVER=k11-control
       - STOMP_TOPIC_NAME=/topic/org.dawnsci.file.topic
+      # - STOMP_SERVER=local-activemq
+      - STOMP_TOPIC_NAME=/topic/org.dawnsci.file.topic
+      # - STOMP_TOPIC_NAME=/topic/INFO
       - TILED_DB_USER=${TILED_DB_USER}
       - TILED_DB_PW=${TILED_DB_PW}
       - TILED_DB_NAME=${TILED_DB_NAME}
@@ -95,7 +91,7 @@ services:
       - TILED_INGEST_RMQ_USER=${TILED_INGEST_RMQ_USER}
       - TILED_INGEST_RMQ_PW=${TILED_INGEST_RMQ_PW}
     volumes:
-      - /dls/k11/data/2025:/dls/k11/data/2025:ro
+      - /dls/k11/data/2025/mg39885-1/processed:/dls/k11/data/2025/mg39885-1/processed:ro
       - ./mlex_tiled_ingest:/app
       - ./tiled/deploy:/deploy
       - ./data/tiled_storage:/tiled_storage
@@ -134,6 +130,15 @@ services:
     restart: always
     networks:
       mle_net:
+
+  # local-activemq:
+  #   image: rmohr/activemq:latest
+  #   ports: 
+  #     - 61613:61613
+  #     - 8161:8161
+  #   restart: unless-stopped
+  #   networks:
+  #     mle_net:
 
 
 networks:
