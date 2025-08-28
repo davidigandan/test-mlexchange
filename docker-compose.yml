@@ -48,7 +48,8 @@ services:
       # - /dls/staging/dls/k11/data/2024/mg37376-1/processing/20240311120527_37086:/tiled_storage:r
       # - /dls/k11/data/2025/mg40163-1/processed:/tiled_storage:r #DB B
       # - /dls/k11/data/2025/mg34010-1/processed/Savu_k11-52757_full_fd_rr_vo_pag_AST_tiff:/tiled_storage:r #DB C
-      - /dls/k11/data/2025/mg39885-1/processed/:/dls/k11/data/2025/mg39885-1/processed/:r #DB C
+      # - /dls/k11/data/2025/mg39885-1/processed/:/dls/k11/data/2025/mg39885-1/processed/:r #DB C
+      - /scratch/wdr83388/Workspaces/mlexchange-dev-deployment/mlex_highres_segmentation/dev-dir/testvisit:/dls/k11/data/2025/testvisit/processed/Savu_Test_Visit:ro
       
     depends_on:
       - tiled_db
@@ -64,7 +65,7 @@ services:
       - POSTGRES_PASSWORD=${TILED_DB_PW}
       - POSTGRES_DB=${TILED_DB_NAME}
     volumes:
-      - ./data/tiled_storage3h:/var/lib/postgresql/data:rw
+      - ./data/tiled_storage3j:/var/lib/postgresql/data:rw
     restart: unless-stopped
     networks:
       mle_net:
@@ -91,7 +92,8 @@ services:
       - TILED_INGEST_RMQ_USER=${TILED_INGEST_RMQ_USER}
       - TILED_INGEST_RMQ_PW=${TILED_INGEST_RMQ_PW}
     volumes:
-      - /dls/k11/data/2025/mg39885-1/processed:/dls/k11/data/2025/mg39885-1/processed:ro
+      # - /dls/k11/data/2025/mg39885-1/processed:/dls/k11/data/2025/mg39885-1/processed:ro
+      # - /scratch/wdr83388/Workspaces/mlexchange-dev-deployment/mlex_highres_segmentation/dev-dir/testvisit:/dls/k11/data/2025/testvisit/processed/Savu_Test_Visit:ro
       - ./mlex_tiled_ingest:/app
       - ./tiled/deploy:/deploy
       - ./data/tiled_storage:/tiled_storage
@@ -100,8 +102,10 @@ services:
     
 
   mlex_segmentation:
-    image: ghcr.io/mlexchange/mlex_highres_segmentation:main
-    command: python app.py
+    # image: ghcr.io/mlexchange/mlex_highres_segmentation:main
+    image: localhost/dash-test:latest
+    # command: python app.py
+    command: gunicorn -b 0.0.0.0:8075 --reload --access-logfile - --error-logfile - --capture-output --log-level debug app:server
     environment:
       - DATA_TILED_URI=http://tiled:8000/api/v1/metadata/
       - DATA_TILED_API_KEY=${TILED_API_KEY}
@@ -124,9 +128,11 @@ services:
       - SEGMENT_SCRIPT_PATH=${SEGMENT_SCRIPT_PATH}
     ports:
       - 8075:8075
-    # depends_on:
-    #   - tiled
+    depends_on:
+      - tiled
     # Intermediate solution restarting frontend on failure due to connection issues
+    volumes:
+      - ../mlex_highres_segmentation:/app
     restart: always
     networks:
       mle_net:
