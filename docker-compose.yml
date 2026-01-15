@@ -24,7 +24,7 @@ services:
       - POSTGRES_DB=${PREFECT_DB_NAME}
     volumes:
       # - ./data/prefect_db:/var/lib/postgresql/data:rw
-      - prefect_db:/var/lib/postgresql/data:rw
+      - ./prefect_db:/var/lib/postgresql/data:rw
     restart: unless-stopped
     networks:
       mle_net:
@@ -71,7 +71,7 @@ services:
     volumes:
       # - ./data/abcde:/var/lib/postgresql/data:rw
       # - /tmp/tileddb:/var/lib/postgresql/data:Z
-      - tiled_db:/var/lib/postgresql/data:rw
+      - ./tiled_db:/var/lib/postgresql/data:rw
     restart: unless-stopped
     networks:
       mle_net:
