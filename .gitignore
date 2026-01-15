@@ -1,7 +1,6 @@
 data/prefect_db
 data/tiled_db
 data/tiled_storage/writable
-.env
 .DS_Store
 rabbitmq/
 tiled_storage*
